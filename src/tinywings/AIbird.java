@@ -52,7 +52,7 @@ public class AIbird extends Bird {
 				break;
 			}
 			if (stamp[0] > previousframe) {
-				System.out.println(pressed.get());
+				//System.out.println(pressed.get());
 				previousy = birdy;
 				previousx = birdx;
 				//System.out.println("prepoopy");
