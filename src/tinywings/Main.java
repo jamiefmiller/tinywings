@@ -11,16 +11,16 @@ import java.util.Map;
 public class Main {
 	private static final int width = 600;
 	private static final int height = 400;
-	private static final int raceLength = 2200;
+	private static final int raceLength = 1000;
 	private static final Color landColor = new Color(90, 210, 60);
 	private static final Color skyColor = new Color(180, 210, 255);
 	
 	public static void main(String[] args) {
 		int defaultFrameRate = 30;
-		runGameAtFramerate(defaultFrameRate);
+		runConcurrentGame(defaultFrameRate);
 	}
 	
-	public static double runGameAtFramerate(int frameRate) {
+	public static Performance runConcurrentGame(int frameRate) {
 		BufferedImage blank = new BufferedImage(width, height, BufferedImage.TYPE_INT_RGB);
 		
 		Terrain terrain = new Terrain(raceLength);
@@ -48,7 +48,7 @@ public class Main {
 		// Run Race
 		long nanoPerFrame = (1000*1000000)/frameRate;
 		int frame;
-		for (frame=0; true; frame++) {
+		for (frame=0; frame < raceLength*frameRate*1.5; frame++) {
 			long start = System.nanoTime();
 			// Update bird positions. Done at start of loop to give birds a
 			// chance to respond during the idle wait between frames.
@@ -98,9 +98,9 @@ public class Main {
 				thread.join();
 			} catch (InterruptedException e) {}
 		}
-		//System.out.println("Total frames: " + frame);
-		//System.out.println("Late frame generations: " + lateGenerations);
-		return lateGenerations /(double) frame;
+
+		double lateFrameFraction = lateGenerations /(double) frame;
+		return new Performance(lateFrameFraction, 0.0);
 	}
 
 	private static BufferedImage createScreenForBird(Terrain terrain, BirdTracker bird, List<BirdTracker> birds) {
