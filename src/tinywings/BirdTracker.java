@@ -27,7 +27,7 @@ public class BirdTracker {
 		if (isPlayer) {
 			this.bird = new PlayerBird(screen);
 		} else {
-			this.bird = new AIbird(screen, color, radius, 5, framesMissed);
+			this.bird = new AIbird(screen, color, radius, 0, framesMissed);
 		}
 	}
 	
