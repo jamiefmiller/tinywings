@@ -12,8 +12,8 @@ public class Main {
 	private static final int width = 600;
 	private static final int height = 400;
 	private static final int raceLength = 1000;
-	private static final Color landColor = new Color(90, 210, 60);
-	private static final Color skyColor = new Color(180, 210, 255);
+	public static final Color landColor = new Color(90, 210, 60);
+	public static final Color skyColor = new Color(180, 210, 255);
 	
 	public static void main(String[] args) {
 		int defaultFrameRate = 30;
@@ -35,6 +35,7 @@ public class Main {
 		colors[2] = Color.GREEN;
 		colors[3] = Color.YELLOW;
 		birds.add(new BirdTracker(colors[0], true, blank, terrain));
+		birds.add(new BirdTracker(colors[1], false, blank, terrain));
 		
 		// Start Threads
 		List<Thread> threads = new ArrayList<>();
@@ -117,16 +118,16 @@ public class Main {
 		}
 		
 		// If it's a player, draw all birds.
-		if (bird.isPlayer()) {
+		//if (bird.isPlayer()) {
 			for (BirdTracker otherBird : birds) {
-				if (otherBird != bird) {
+				//if (otherBird != bird) {
 					drawBirdWithOffset(g, otherBird, offset);
-				}
+				//}
 			}
-		}
+		//}
 		
 		// Draw the viewing bird.
-		drawBirdWithOffset(g, bird, offset);
+		//drawBirdWithOffset(g, bird, offset);
 		
 		g.dispose();
 		return image;

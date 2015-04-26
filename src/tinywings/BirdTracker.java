@@ -2,6 +2,7 @@ package tinywings;
 
 import java.awt.Color;
 import java.awt.image.BufferedImage;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicStampedReference;
 
 public class BirdTracker {
@@ -14,15 +15,19 @@ public class BirdTracker {
 	private Terrain terrain;
 	private PhysicsBody body;
 	private boolean isPlayer;
+	private AtomicInteger framesMissed;
 
 	public BirdTracker(Color color, boolean isPlayer, BufferedImage startScreen, Terrain terrain) {
 		this.color = color;
 		this.terrain = terrain;
 		this.isPlayer = isPlayer;
 		body = new PhysicsBody(radius+1, terrain.getHeight(radius+1)+radius, radius);
+		framesMissed = new AtomicInteger(0);
 		screen = new AtomicStampedReference<BufferedImage>(startScreen, 0);
 		if (isPlayer) {
 			this.bird = new PlayerBird(screen);
+		} else {
+			this.bird = new AIbird(screen, color, radius, 5, framesMissed);
 		}
 	}
 	
