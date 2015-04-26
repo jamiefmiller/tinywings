@@ -118,16 +118,16 @@ public class Main {
 		}
 		
 		// If it's a player, draw all birds.
-		//if (bird.isPlayer()) {
+		if (bird.isPlayer()) {
 			for (BirdTracker otherBird : birds) {
-				//if (otherBird != bird) {
+				if (otherBird != bird) {
 					drawBirdWithOffset(g, otherBird, offset);
-				//}
+				}
 			}
-		//}
+		}
 		
 		// Draw the viewing bird.
-		//drawBirdWithOffset(g, bird, offset);
+		drawBirdWithOffset(g, bird, offset);
 		
 		g.dispose();
 		return image;
