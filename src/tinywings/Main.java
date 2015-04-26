@@ -7,7 +7,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.atomic.AtomicStampedReference;
 
 public class Main {
 	private static final int width = 600;
@@ -21,7 +20,6 @@ public class Main {
 	
 	public static void main(String[] args) {
 		BufferedImage blank = new BufferedImage(width, height, BufferedImage.TYPE_INT_RGB);
-		AtomicStampedReference<BufferedImage> screen = new AtomicStampedReference<BufferedImage>(blank, 0);
 		
 		Terrain terrain = new Terrain(raceLength);
 		
@@ -44,13 +42,22 @@ public class Main {
 		
 		// Run Race
 		long nanoPerFrame = (1000*1000000)/frameRate;
-		for (int frame=0; frame<raceLength; frame++) {
+		for (int frame=0; true; frame++) {
 			long start = System.nanoTime();
 			// Update bird positions. Done at start of loop to give birds a
 			// chance to respond during the idle wait between frames.
 			for (BirdTracker bird : birds) {
 				bird.update();
 			}
+			
+			// If a bird is done, end game.
+			boolean done = false;
+			for (BirdTracker bird : birds) {
+				if (bird.getX() >= raceLength) {
+					done = true;
+				}
+			}
+			if (done) {break;}
 			
 			// Draw a screen for each bird.
 			Map<BirdTracker, BufferedImage> screenBuffer = new HashMap<>();
@@ -62,7 +69,7 @@ public class Main {
 			// Send screen to birds.
 			for (BirdTracker bird : birds) {
 				BufferedImage image = screenBuffer.get(bird);
-				screen.set(image, frame);
+				bird.setScreen(image, frame);
 			}
 			
 			// Idle wait to keep constant frame rate
@@ -70,7 +77,9 @@ public class Main {
 		}
 		
 		// End Program
-		screen.set(blank, -1); // Stamp of -1 is shutdown signal.
+		for (BirdTracker bird : birds) {
+			bird.setScreen(blank, -1); // Stamp of -1 is shutdown signal.
+		}
 		for (Thread thread : threads) {
 			try {
 				thread.join();
