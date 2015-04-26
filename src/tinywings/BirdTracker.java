@@ -38,14 +38,15 @@ public class BirdTracker {
 		return color;
 	}
 	
-	public void update() {
+	public void update(int fps) {
 		if (bird.getPressed()) {
 			body.press();
 		} else {
 			body.unpress();
 		}
 		int x = body.getX();
-		body.update(terrain.getHeight(x), terrain.getSlope(x), terrain.getRegion(x));
+		double scale = 60.0/(double) fps;
+		body.update(terrain.getHeight(x), terrain.getSlope(x), terrain.getRegion(x), scale);
 	}
 	
 	public int getX() {

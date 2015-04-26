@@ -12,16 +12,21 @@ public class Main {
 	private static final int width = 600;
 	private static final int height = 400;
 	private static final int raceLength = 2200;
-	private static final int frameRate = 60;
 	private static final Color landColor = new Color(90, 210, 60);
 	private static final Color skyColor = new Color(180, 210, 255);
 	
-	private static List<BirdTracker> birds = new ArrayList<>();
-	
 	public static void main(String[] args) {
+		int defaultFrameRate = 30;
+		runGameAtFramerate(defaultFrameRate);
+	}
+	
+	public static double runGameAtFramerate(int frameRate) {
 		BufferedImage blank = new BufferedImage(width, height, BufferedImage.TYPE_INT_RGB);
 		
 		Terrain terrain = new Terrain(raceLength);
+		
+		List<BirdTracker> birds = new ArrayList<>();
+		long lateGenerations = 0;
 		
 		// Create Birds
 		Color[] colors = new Color[4];
@@ -42,12 +47,13 @@ public class Main {
 		
 		// Run Race
 		long nanoPerFrame = (1000*1000000)/frameRate;
-		for (int frame=0; true; frame++) {
+		int frame;
+		for (frame=0; true; frame++) {
 			long start = System.nanoTime();
 			// Update bird positions. Done at start of loop to give birds a
 			// chance to respond during the idle wait between frames.
 			for (BirdTracker bird : birds) {
-				bird.update();
+				bird.update(frameRate);
 			}
 			
 			// If a bird is done, end game.
@@ -62,7 +68,7 @@ public class Main {
 			// Draw a screen for each bird.
 			Map<BirdTracker, BufferedImage> screenBuffer = new HashMap<>();
 			for (BirdTracker bird : birds) {
-				BufferedImage image = createScreenForBird(terrain, bird);
+				BufferedImage image = createScreenForBird(terrain, bird, birds);
 				screenBuffer.put(bird, image);
 			}
 			
@@ -73,7 +79,14 @@ public class Main {
 			}
 			
 			// Idle wait to keep constant frame rate
-			while (System.nanoTime()-start < nanoPerFrame){}
+			long timeRemaining = nanoPerFrame - (System.nanoTime() - start);
+			if (timeRemaining > 0) {
+				try {
+					Thread.sleep(timeRemaining/1000000);
+				} catch (InterruptedException e) {}
+			} else {
+				lateGenerations++;
+			}
 		}
 		
 		// End Program
@@ -85,9 +98,12 @@ public class Main {
 				thread.join();
 			} catch (InterruptedException e) {}
 		}
+		//System.out.println("Total frames: " + frame);
+		//System.out.println("Late frame generations: " + lateGenerations);
+		return lateGenerations /(double) frame;
 	}
 
-	private static BufferedImage createScreenForBird(Terrain terrain, BirdTracker bird) {
+	private static BufferedImage createScreenForBird(Terrain terrain, BirdTracker bird, List<BirdTracker> birds) {
 		// Generate screen
 		BufferedImage image = new BufferedImage(width, height, BufferedImage.TYPE_INT_RGB);
 		Graphics g = image.createGraphics();

@@ -52,8 +52,9 @@ public class PhysicsBody {
 	 * @param floor Height of the ground at current x.
 	 * @param tangent Angle of tangent line to the floor in radians.
 	 * @param region The physics region to use if the object is in collision with the terrain.
+	 * @param scale Multiplied by the change in position at the last step, used to update more or less frequently.
 	 */
-	public void update(int floor, double floorAngle, Region region) {
+	public void update(int floor, double floorAngle, Region region, double scale) {
 		//System.out.println(direction);
 		if (y-r <= floor) {
 			double angleSimilarity = 1-((Math.abs(floorAngle-direction) % (Math.PI/2)) / (Math.PI/2));
@@ -63,11 +64,11 @@ public class PhysicsBody {
 			//}
 			y = floor+r;
 			speed *=angleSimilarity*angleSimilarity;
-			speed += 10*gravity*(Math.sin(floorAngle));//angleSimilarity +
+			speed += scale*10*gravity*(Math.sin(floorAngle));//angleSimilarity +
 			direction = floorAngle;
 		} else {
 			double xvec = speed*Math.cos(direction);
-			double yvec = speed*Math.sin(direction) + gravity;
+			double yvec = speed*Math.sin(direction) + gravity*scale;
 			speed = Math.sqrt(xvec*xvec + yvec*yvec);
 			direction = Math.atan2(yvec, xvec);
 		}
@@ -83,8 +84,8 @@ public class PhysicsBody {
 			direction = Math.PI*1.5+0.1;
 		}
 		
-		x += speed*Math.cos(direction);
-		y += speed*Math.sin(direction);
+		x += scale*speed*Math.cos(direction);
+		y += scale*speed*Math.sin(direction);
 		
 		
 		/*if (getY()-r <= floor) {
