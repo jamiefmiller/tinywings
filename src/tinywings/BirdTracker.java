@@ -2,6 +2,7 @@ package tinywings;
 
 import java.awt.Color;
 import java.awt.image.BufferedImage;
+import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicStampedReference;
 
@@ -17,17 +18,27 @@ public class BirdTracker {
 	private boolean isPlayer;
 	private AtomicInteger framesMissed;
 
-	public BirdTracker(Color color, boolean isPlayer, BufferedImage startScreen, Terrain terrain) {
+	public BirdTracker(
+			Color color,
+			boolean isPlayer,
+			Terrain terrain,
+			boolean isFake,
+			AtomicStampedReference<BufferedImage> screen,
+			List<AtomicStampedReference<BufferedImage>> screens) {
 		this.color = color;
 		this.terrain = terrain;
 		this.isPlayer = isPlayer;
 		body = new PhysicsBody(radius+1, terrain.getHeight(radius+1)+radius, radius);
 		framesMissed = new AtomicInteger(0);
-		screen = new AtomicStampedReference<BufferedImage>(startScreen, 0);
+		this.screen = screen;
 		if (isPlayer) {
-			this.bird = new PlayerBird(screen);
+			this.bird = new PlayerBird(screen, screens);
 		} else {
-			this.bird = new AIbird(screen, color, radius, 0, framesMissed);
+			if (isFake) {
+				this.bird = new SleepyBird(screen, screens, framesMissed);
+			} else {
+				this.bird = new AIbird(screen, screens, color, radius, 5, framesMissed);
+			}
 		}
 	}
 	
@@ -68,5 +79,13 @@ public class BirdTracker {
 	
 	public boolean isPlayer() {
 		return isPlayer;
+	}
+	
+	public int getFramesMissed() {
+		return framesMissed.get();
+	}
+	
+	public void demandNonConcurrentUpdate() {
+		bird.computeFrame();
 	}
 }

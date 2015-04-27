@@ -7,6 +7,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicStampedReference;
 
 public class Main {
 	private static final int width = 600;
@@ -16,10 +17,99 @@ public class Main {
 	public static final Color skyColor = new Color(180, 210, 255);
 	
 	public static void main(String[] args) {
-		int defaultFrameRate = 30;
+		int defaultFrameRate = 20;
 		runConcurrentGame(defaultFrameRate);
 	}
 	
+	//////////////////////////////////////////////////////////////////////////////////////////////
+	public static Performance runNonConcurrentGame(int frameRate) {
+		BufferedImage blank = new BufferedImage(width, height, BufferedImage.TYPE_INT_RGB);
+		
+		Terrain terrain = new Terrain(raceLength);
+		
+		List<BirdTracker> birds = new ArrayList<>();
+		long lateGenerations = 0;
+		
+		// Create Birds
+		Color[] colors = new Color[4];
+		colors[0] = Color.RED;
+		colors[1] = Color.BLUE;
+		colors[2] = Color.GREEN;
+		colors[3] = Color.YELLOW;
+		
+		List<AtomicStampedReference<BufferedImage>> screens = new ArrayList<>();
+		for (int i=0; i<4; i++) {
+			screens.add(new AtomicStampedReference<BufferedImage>(blank, 0));
+		}
+		
+		birds.add(new BirdTracker(colors[0], true, terrain, false, screens.get(0), screens));
+		birds.add(new BirdTracker(colors[1], false, terrain, false, screens.get(1), screens));
+		birds.add(new BirdTracker(colors[2], false, terrain, false, screens.get(2), screens));
+		birds.add(new BirdTracker(colors[3], false, terrain, false, screens.get(3), screens));
+		
+		// Run Race
+		long nanoPerFrame = (1000*1000000)/frameRate;
+		int frame;
+		for (frame=0; frame < raceLength*frameRate*1.5; frame++) {
+			long start = System.nanoTime();
+			// Update bird positions. Done at start of loop to give birds a
+			// chance to respond during the idle wait between frames.
+			for (BirdTracker bird : birds) {
+				bird.update(frameRate);
+			}
+			
+			// If a bird is done, end game.
+			boolean done = false;
+			for (BirdTracker bird : birds) {
+				if (bird.getX() >= raceLength) {
+					done = true;
+				}
+			}
+			if (done) {break;}
+			
+			// Draw a screen for each bird.
+			Map<BirdTracker, BufferedImage> screenBuffer = new HashMap<>();
+			for (BirdTracker bird : birds) {
+				BufferedImage image = createScreenForBird(terrain, bird, birds);
+				screenBuffer.put(bird, image);
+			}
+			
+			// Send screen to birds.
+			for (BirdTracker bird : birds) {
+				BufferedImage image = screenBuffer.get(bird);
+				bird.setScreen(image, frame);
+			}
+			
+			for (BirdTracker bird : birds) {
+				bird.demandNonConcurrentUpdate();
+			}
+			
+			// Idle wait to keep constant frame rate
+			long timeRemaining = nanoPerFrame - (System.nanoTime() - start);
+			if (timeRemaining > 0) {
+				try {
+					Thread.sleep(timeRemaining/1000000);
+				} catch (InterruptedException e) {}
+			} else {
+				lateGenerations++;
+			}
+		}
+		
+		// End Program
+		for (BirdTracker bird : birds) {
+			bird.setScreen(blank, -1); // Stamp of -1 is shutdown signal.
+		}
+
+		double lateFrameFraction = lateGenerations /(double) frame;
+		double missedFrameSum = 0;
+		for (BirdTracker bird : birds) {
+			missedFrameSum += bird.getFramesMissed();
+		}
+		double missedFrameFraction = missedFrameSum /((double) 3*frame);
+		return new Performance(lateFrameFraction, missedFrameFraction);
+	}
+	
+	//////////////////////////////////////////////////////////////////////////////////////////////
 	public static Performance runConcurrentGame(int frameRate) {
 		BufferedImage blank = new BufferedImage(width, height, BufferedImage.TYPE_INT_RGB);
 		
@@ -34,8 +124,16 @@ public class Main {
 		colors[1] = Color.BLUE;
 		colors[2] = Color.GREEN;
 		colors[3] = Color.YELLOW;
-		birds.add(new BirdTracker(colors[0], true, blank, terrain));
-		birds.add(new BirdTracker(colors[1], false, blank, terrain));
+
+		List<AtomicStampedReference<BufferedImage>> screens = new ArrayList<>();
+		for (int i=0; i<4; i++) {
+			screens.add(new AtomicStampedReference<BufferedImage>(blank, 0));
+		}
+		
+		birds.add(new BirdTracker(colors[0], true, terrain, false, screens.get(0), screens));
+		birds.add(new BirdTracker(colors[1], false, terrain, false, screens.get(1), screens));
+		birds.add(new BirdTracker(colors[2], false, terrain, false, screens.get(2), screens));
+		birds.add(new BirdTracker(colors[3], false, terrain, false, screens.get(3), screens));
 		
 		// Start Threads
 		List<Thread> threads = new ArrayList<>();
@@ -101,8 +199,14 @@ public class Main {
 		}
 
 		double lateFrameFraction = lateGenerations /(double) frame;
-		return new Performance(lateFrameFraction, 0.0);
+		double missedFrameSum = 0;
+		for (BirdTracker bird : birds) {
+			missedFrameSum += bird.getFramesMissed();
+		}
+		double missedFrameFraction = missedFrameSum /((double) 3*frame);
+		return new Performance(lateFrameFraction, missedFrameFraction);
 	}
+	//////////////////////////////////////////////////////////////////////////////////////////////
 
 	private static BufferedImage createScreenForBird(Terrain terrain, BirdTracker bird, List<BirdTracker> birds) {
 		// Generate screen

@@ -56,7 +56,8 @@ public class PhysicsBody {
 	 */
 	public void update(int floor, double floorAngle, Region region, double scale) {
 		//System.out.println(direction);
-		if (y-r <= floor) {
+		//System.out.println(y-r<=floor+1);
+		if (y-r <= floor+1) {
 			double angleSimilarity = 1-((Math.abs(floorAngle-direction) % (Math.PI/2)) / (Math.PI/2));
 			//System.out.println("floor"+floorAngle+"direction"+direction+"similarity"+angleSimilarity);
 			//if (angleSimilarity < 0.8) {
@@ -86,7 +87,9 @@ public class PhysicsBody {
 		
 		x += scale*speed*Math.cos(direction);
 		y += scale*speed*Math.sin(direction);
-		
+		if (y-r <= floor) {
+			y = floor+r;
+		}
 		
 		/*if (getY()-r <= floor) {
 			// Collision with ground.
